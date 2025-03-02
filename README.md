@@ -5,3 +5,10 @@
 ### Latest tests
 
 ![test](/img/Figure_1.png)
+
+## pip installs
+
+- python-coinmarketcap
+- pandas
+- numpy
+- sklearn
