@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 
 
 # Not needed but for info :D
-def calculate_mse(y, y_hat):
+def calculate_mse(y, y_hat, n):
     e = y - y_hat
-    return 0.5 * np.sum(e ** 2)
+    return (1 / (2* n)) * np.sum(e ** 2)
 
 
 def prepare_data(df):
@@ -26,13 +26,17 @@ def gradient_descent(epochs, X_with_bias, y, n):
     l_step = 0.01
     w = np.random.randn(X.shape[1], 1)
 
+    print("Old Weights: ", w)
+
     for i in range(epochs):
         y_hat = np.dot(X_with_bias, w)
-        mse = calculate_mse(y, y_hat)
+        mse = calculate_mse(y, y_hat, n)
         mses.append(float(mse))
         e = y - y_hat
         g = -(1 / n) * np.dot(X_with_bias.T, e) 
         w = w - l_step * g
+    
+    print("New Weights: ", w)
     return w, mses
 
 def plot_diagram(mses):
