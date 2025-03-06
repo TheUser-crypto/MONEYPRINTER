@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # Not needed but for info :D
 def calculate_mse(y, y_hat, n):
     e = y - y_hat
-    return (1 / (2* n)) * np.sum(e ** 2)
+    return (1 / n) * np.sum(e ** 2)
 
 
 def prepare_data(df):
@@ -24,7 +24,7 @@ def prepare_data(df):
 def gradient_descent(epochs, X_with_bias, y, n):
     mses = []
     l_step = 0.01
-    w = np.random.randn(X.shape[1], 1)
+    w = np.random.randn(X_with_bias.shape[1], 1)
 
     print("Old Weights: ", w)
 
@@ -51,6 +51,7 @@ epochs = 1000
 df = pd.read_csv("datasets/sleep_casus.csv")
 
 X, y = prepare_data(df)
+
 n = X.shape[0]
 new_w, mses = gradient_descent(epochs, X, y, n)
 
