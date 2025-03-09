@@ -1,61 +1,124 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score, mean_absolute_error
-
+import numpy as np
 import matplotlib.pyplot as plt
 
-from api import getBTCData
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
-fname = "datasets/btcusd_1-min_data.csv"
-btc_data = getBTCData()
-scaler = StandardScaler()
-model = LinearRegression()
+def sigmoid_derivative(x):
+    return sigmoid(x) * (1 - sigmoid(x))
 
-def create_prediction_diagram(x_size, y_size, test_values, pred):
-    plt.figure(figsize=(x_size, y_size))
-    plt.plot(test_values, label='Actual Close Prices', color='blue')
-    plt.plot(pred, label='Predicted Close Prices', linestyle='--', color='red')
-    plt.xlabel('Index')
-    plt.ylabel('Close Price')
-    plt.title('Actual vs Predicted Close Prices')
-    plt.legend()
+def calculate_mse(y, output, n):
+    e = y - output
+    return (1 / n) * np.sum(e ** 2)
+
+
+def robust_scale(data):
+
+    median = np.median(data, axis=0)
+    q1 = np.percentile(data, 25, axis=0)
+    q3 = np.percentile(data, 75, axis=0)  
+    iqr = q3 - q1
+
+    iqr = np.where(iqr == 0, 1, iqr)
+
+    scaled_data = (data - median) / iqr
+
+    return scaled_data, median, iqr
+
+
+def inverse_robust_scale(scaled_data, iqr, median):
+    original_data = scaled_data * iqr + median
+    return original_data
+
+def prepare_data(df):
+
+    df = df.head(730)
+    X = df[['Open', 'High', 'Low', 'Volume']].values
+    y = df['Close'].values.reshape(-1, 1)
+
+    X_scaled, x_median, x_iqr = robust_scale(X)
+
+    y_scaled, y_median, y_iqr = robust_scale(y)
+
+    X_with_bias = np.concatenate([np.ones((X_scaled.shape[0], 1)), X_scaled], axis=1)
+
+    return X_with_bias, y_scaled, y_median, y_iqr
+
+def plot_diagram(mses, epoch):
+    plt.plot(range(1, epoch + 1), mses)
+    plt.xlabel("Epoch")
+    plt.ylabel("MSE")
+    plt.title("Training Loss")
     plt.show()
 
-def train_model(fname, scaler):
-    df = pd.read_csv(fname)
+def train_model(epochs, X, y, w1, b1, w2, b2, mses, LR, n):
+    for i in range(epochs):
+        # Forward prop
+        z1 = np.dot(X, w1) + b1
+        a1 = sigmoid(z1)
+        z2 = np.dot(a1, w2) + b2
+        a2 = z2 
 
-    x = df[['High', 'Low']]
-    y = df['Close']
+        loss = calculate_mse(y, a2, n)
+        mses.append(loss)
 
-    x_scaled = scaler.fit_transform(x)
-    x_train, x_test, y_train, y_test = train_test_split(x_scaled, y, test_size=0.3, random_state=42)
+        # Backward prop
+        error_output = (a2 - y)
+        delta_output = error_output 
 
-    model.fit(x_train, y_train)
-    y_pred = model.predict(x_test)
-    mae = mean_absolute_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
+        error_hidden = delta_output.dot(w2.T)
+        delta_hidden = error_hidden * sigmoid_derivative(z1)
 
-    return mae, r2
+        w2 -= (LR / n) * a1.T.dot(delta_output)
+        b2 -= (LR / n) * np.sum(delta_output, axis=0, keepdims=True)
+        w1 -= (LR / n) * X.T.dot(delta_hidden)
+        b1 -= (LR / n) * np.sum(delta_hidden, axis=0, keepdims=True)
 
-def get_predicted_price(btc_data, scaler, model):
+        if i % 1000 == 0:
+            print(f"Epoch {i}, Loss: {loss}")
 
-    new_data = {
-        'High': [btc_data['highest']],
-        'Low': [btc_data['lowest']],
-    }
+    return a2, mses
 
-    new_df = pd.DataFrame(new_data)
-    new_df_scaled = scaler.transform(new_df)
-    predicted_price = model.predict(new_df_scaled)
+input_size = 5 
+hidden_size = 16
+output_size = 1
+np.random.seed(42)
+w1 = np.random.randn(input_size, hidden_size) * 0.1
+b1 = np.zeros((1, hidden_size))
+w2 = np.random.randn(hidden_size, output_size) * 0.1
+b2 = np.zeros((1, output_size))
 
-    return predicted_price[0]
+LR = 0.1
+epochs = 10000
+
+df = pd.read_csv("datasets/btc-data.csv")
+
+X, y, y_median, y_iqr = prepare_data(df)
+n = X.shape[0]
+
+mses = []
+
+prediction_close, mses = train_model(epochs, X, y, w1, b1, w2, b2, mses, LR, n)
+prediction_denormalize = inverse_robust_scale(prediction_close, y_iqr, y_median)
 
 
-mae, r2 = train_model(fname, scaler)
-print(f'Mean Absolute Error (MAE): {mae:.6f}')
-print(f'R² Score: {r2:.4f}')
+def get_results(predictions, final_mse):
 
-predicted_price = get_predicted_price(btc_data, scaler, model)
-print("Predicted Bitcoin Price: $", predicted_price)
+    week = 7
+    df_first_week = df.head(week)
+    actual_data = df_first_week[['Close']].values
+    print("----------------------")
+    print("Final MSE: ", final_mse)
+    print("----------------------")
+    print("Days Ago  |    Prediction  |    Actual  |    Difference  ")
+
+
+    for i, item in enumerate(actual_data):
+        day = i + 1
+        print(f" {day} | ${predictions[i][0]} | ${item[0]} | ${predictions[i][0] - item[0]}")
+
+        
+
+get_results(prediction_denormalize[:7], mses[-1])
+
