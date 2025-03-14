@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crypto Predictor</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      background: #111;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 2.5rem;
+      letter-spacing: 2px;
+    }
+    main {
+      width: 100%;
+      max-width: 800px;
+      text-align: center;
+    }
+    .predictor {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #222;
+    }
+    /* Hacky modal pop-up */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background: #000;
+      padding: 2rem;
+      border: 1px solid #0f0;
+      border-radius: 4px;
+      text-align: center;
+      font-family: monospace;
+    }
+    .modal-content h2 {
+      color: #0f0;
+      margin-bottom: 1rem;
+    }
+    .modal-content p {
+      margin-bottom: 0.5rem;
+    }
+    .close-btn {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      background: #0f0;
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Crypto Predictor</h1>
+    <p>Your future, encrypted in code.</p>
+  </header>
+
+  <main>
+    <div class="predictor">
+      <h2>Market Trends</h2>
+      <p>Get real-time predictions and insights on your favorite cryptocurrencies.</p>
+      <p><em>Data will load soon...</em></p>
+    </div>
+  </main>
+
+  <div class="modal" id="hackModal">
+    <div class="modal-content">
+      <h2>Access Granted</h2>
+      <p id="username"></p>
+      <p id="password"></p>
+      <button class="close-btn" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    function getRandomString(length) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    }
+
+    function populateModal() {
+      const username = "user_" + getRandomString(5);
+      const password = getRandomString(10);
+      document.getElementById('username').innerText = "Username: " + username;
+      document.getElementById('password').innerText = "Password: " + password;
+    }
+
+    function showModal() {
+      populateModal();
+      document.getElementById('hackModal').style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById('hackModal').style.display = "none";
+    }
+
+    window.addEventListener('load', () => {
+      setTimeout(showModal, 3000);
+    });
+  </script>
+</body>
+</html>
